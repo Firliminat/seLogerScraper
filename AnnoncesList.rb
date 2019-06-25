@@ -1,20 +1,22 @@
 require "./Scraper.rb"
 require "./SearchParameters.rb"
+require "./Annonce.rb"
 
 class AnnoncesList
-  attr_accessor :scraper, :search_parameters, :page, :nb_pages, :nb_annonces, :on_last_page, :liste_annonces_url
+  attr_accessor :scraper, :search_parameters, :search_url, :page, :nb_pages, :nb_annonces, :on_last_page, :liste_annonces_url
 
   def initialize(search_parameters, wait_time)
 
     @search_parameters = SearchParameters.new(search_parameters)
-    search_url = @search_parameters.get_search_url()
+    @search_url = @search_parameters.get_search_url()
 
-    @scraper = Scraper.new(search_url, wait_time)
-    @liste_annonces_url = Array.new()
+    @scraper = Scraper.new(@search_url, wait_time)
 
     parse_pagination_infos()
     parse_nb_annonces()
     parse_annonces_url()
+
+    ann = Annonce.new(@liste_annonces_url[0], wait_time)
   end
 
   private
@@ -50,11 +52,12 @@ class AnnoncesList
     end
   end
 
-  def parse_annonces_url()
+  def parse_annonces_url
     while !@on_last_page do
+      @on_last_page = true
       puts "  page #{@page}/#{@nb_pages}"
-      @liste_annonces_url << @scraper.session.find_all('a.c-pa-link.link_AB').map do |elt|
-        elt['href'].split('?')[0]
+      @liste_annonces_url = @scraper.session.find_all('a.c-pa-link.link_AB').map do |elt|
+        elt['href'].to_s.split('?')[0]
       end
 
       nextPage
@@ -64,4 +67,4 @@ class AnnoncesList
 end
 
 
-puts AnnoncesList.new("", 0.001).liste_annonces_url
+AnnoncesList.new("", 0.001)
